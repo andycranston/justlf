@@ -28,7 +28,26 @@ foo.txt.tmp1
 foo.txt.tmp2
 ```
 
+These are usually deleted after a successful run of the `justlf` command but
+if the command was interrupts of subjected to an unusual error condition
+then either or both of the temporary files might not get deleted.
 
+The most common use of `justlf` is after a text file from a Windows platform
+has been copied in binary mode to a UNIX/Linux system.  When the file
+is edited using the `vi` editor every line ends with the:
+
+```
+^M
+```
+
+control character.  Simply exit `vi` and type:
+
+```
+justlf filename
+```
+
+where `filename` is the name of file.  Then edit again with `vi` and
+all of the `^M` should have disappeared.
 
 --------------------------------------
 

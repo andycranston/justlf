@@ -5,7 +5,10 @@
  *  behind.  handy for handling files copied from a Windows system
  *  to a UNIX/Linux one.
  *
- *  also make sure last line has a LF (\n) at the end of it
+ *  also make sure last line has a LF (\n) at the end of it.
+ *
+ *  uses two temporary files to mitigate against dataloss should
+ *  the rename calls fail for some reason (e.g. disk full).
  *
  */
 
@@ -28,7 +31,6 @@
  *  defines
  */
 
-#define MAX_FILE_CONTENT_SIZE 2000000
 #define MAX_FILE_NAME_SIZE 80
 
 /**********************************************************************/

@@ -69,6 +69,11 @@ int main(argc, argv)
     exit(1);
   }
 
+  if (argc > 2) {
+    fprintf(stderr, "%s: only allowed to specify one file name\n", progname);
+    exit(1);
+  }
+
   fname = argv[1];
 
   if (strlen(fname) > MAX_FILE_NAME_SIZE) {

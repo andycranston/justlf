@@ -1,5 +1,5 @@
 /*
- *  @(!--#) @(#) justlf.c, version 003, 06-march-2020
+ *  @(!--#) @(#) justlf.c, version 004, 11-march-2020
  *
  *  remove CR characters (\r) from a text file just leaving LF (\n)
  *  behind.  handy for handling files copied from a Windows system
@@ -10,6 +10,9 @@
  *  uses two temporary files to mitigate against dataloss should
  *  the rename calls fail for some reason (e.g. disk full).
  *
+ *  add a check to make sure file is a text file before messing
+ *  with it.
+ *
  */
 
 /**********************************************************************/
@@ -19,6 +22,7 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
@@ -31,6 +35,14 @@
  *  defines
  */
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #define MAX_FILE_NAME_SIZE 80
 
 /**********************************************************************/
@@ -42,6 +54,39 @@
 char *progname;
 
 int   debug = 0;
+
+/**********************************************************************/
+
+int istextfile(fname)
+  char *fname;
+{
+  FILE *f;
+  int   c;
+  int   flag;
+
+  if ((f = fopen(fname, "r")) == NULL) {
+    return FALSE;
+  }
+
+  flag = TRUE;
+
+  while ((c = getc(f)) != EOF) {
+    if (isprint(c)) {
+      continue;
+    }
+
+    if (isspace(c)) {
+      continue;
+    }
+
+    flag = FALSE;
+    break;
+  }
+
+  fclose(f);
+
+  return flag;
+}
 
 /**********************************************************************/
 
@@ -81,6 +126,16 @@ int main(argc, argv)
     exit(1);
   }
 
+  if (stat(fname, &stbuf) != 0) {
+    fprintf(stderr, "%s: cannot get status of file \"%s\"\n", progname, fname);
+    exit(1);
+  }
+
+  if (! istextfile(fname)) {
+    fprintf(stderr, "%s: file \"%s\" does not appear to be a plain text file\n", progname, fname);
+    exit(1);
+  }
+
   strncpy(tempfname1, fname,   MAX_FILE_NAME_SIZE);
   strncat(tempfname1, ".tmp1", MAX_FILE_NAME_SIZE + 6);
 
@@ -91,11 +146,6 @@ int main(argc, argv)
     printf("[%s]\n", fname);
     printf("[%s]\n", tempfname1);
     printf("[%s]\n", tempfname2);
-  }
-
-  if (stat(fname, &stbuf) != 0) {
-    fprintf(stderr, "%s: cannot get status of file \"%s\"\n", progname, fname);
-    exit(1);
   }
 
   if ((f = fopen(fname, "r")) == NULL) {

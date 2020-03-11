@@ -6,9 +6,13 @@ platforms such as Windows and UNIX/Linux.
 ## justlf.c
 
 Intended for the UNIX/Linux platform.  The `justlf` command takes the
-name of a file as the first and only command line argument.  This file
-is then stripped of any carriage return (\r) characters.  Also if the
-last line in the file is not a line feed (\n) character then one is added.
+name of a file as the first and only command line argument.  The file
+is examined to see if it is a plain text file.  If it is not then an
+error message is printed and the program exits.
+
+Assuming the file is a plain text file it is stripped of any carriage
+return (\r) characters.  Also if the last line in the file does not end
+with a line feed (\n) character then one is added.
 
 To compile do something similar to:
 

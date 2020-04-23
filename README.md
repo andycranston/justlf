@@ -1,4 +1,4 @@
-# lineterm
+# lineutils
 
 Utilities to handles lines in plain text file
 

@@ -1,7 +1,6 @@
 # lineterm
 
-Utilities to handle text file line terminator differences on different
-platforms such as Windows and UNIX/Linux.
+Utilities to handles lines in plain text file
 
 ## justlf.c
 

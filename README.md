@@ -1,6 +1,6 @@
 # lineutils
 
-Utilities to handles lines in plain text files.
+Utilities to handle lines in plain text files.
 
 ## justlf.c
 

@@ -1,8 +1,8 @@
 /*
- *  @(!--#) @(#) justlf.c, version 004, 11-march-2020
+ *  @(!--#) @(#) justlf.c, version 008, 24-april-2020
  *
  *  remove CR characters (\r) from a text file just leaving LF (\n)
- *  behind.  handy for handling files copied from a Windows system
+ *  behind. handy for handling files copied from a Windows system
  *  to a UNIX/Linux one.
  *
  *  also make sure last line has a LF (\n) at the end of it.
@@ -10,8 +10,8 @@
  *  uses two temporary files to mitigate against dataloss should
  *  the rename calls fail for some reason (e.g. disk full).
  *
- *  add a check to make sure file is a text file before messing
- *  with it.
+ *  add a check to make sure file is a text file before
+ *  changing it.
  *
  */
 
@@ -43,7 +43,8 @@
 #define FALSE 0
 #endif
 
-#define MAX_FILE_NAME_SIZE 80
+#define MAX_FILENAME_LENGTH   256
+#define TEMP_FILENAME_PADDING 12
 
 /**********************************************************************/
 
@@ -53,9 +54,38 @@
 
 char *progname;
 
-int   debug = 0;
+/**********************************************************************/
+
+char *basefilename(filename)
+  char   *filename;
+{
+  char   *s;
+  char   *bfile;
+
+  bfile = filename;
+
+  s = filename;
+
+  while (*s != '\0') {
+    if ((*s == '\\') || (*s == '/')) {
+      bfile = s + 1;
+    }
+
+    s++;
+  }
+
+  return bfile;
+}
 
 /**********************************************************************/
+
+void usage()
+{
+  fprintf(stderr, "%s: %s [ -q ] filename\n", progname, progname);
+  exit(2);
+}
+
+/**********************************************************************/ 
 
 int istextfile(fname)
   char *fname;
@@ -90,6 +120,145 @@ int istextfile(fname)
 
 /**********************************************************************/
 
+int justlf(filename, quiet)
+  char *filename;
+  int   quiet;
+{
+  struct stat stbuf;
+  char        tempfname1[MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING + sizeof(char)];
+  char        tempfname2[MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING + sizeof(char)];
+  int         tempf1;
+  int         tempf2;
+  FILE       *f;
+  FILE       *f1;
+  long int    filesize;
+  int         changed;
+  int         lc;
+  int         c;
+
+  if (! quiet) {
+    printf("%s: filename=\"%s\"\n", progname, filename);
+  }
+
+  if (strlen(filename) > MAX_FILENAME_LENGTH) {
+    fprintf(stderr, "%s: file name \"%s\" is too long, limit is %d characters\n", progname, filename, MAX_FILENAME_LENGTH);
+    return(1);
+  }
+
+  if (stat(filename, &stbuf) != 0) {
+    fprintf(stderr, "%s: cannot get status of file \"%s\"\n", progname, filename);
+    return(1);
+  }
+
+  if ((f = fopen(filename, "r")) == NULL) {
+    fprintf(stderr, "%s: cannot open file \"%s\" for reading\n", progname, filename);
+    return 1;
+  }
+
+  if (! istextfile(filename)) {
+    fprintf(stderr, "%s: file \"%s\" is not a plain text file\n", progname, filename);
+    exit(1);
+  }
+
+  strncpy(tempfname1, filename, MAX_FILENAME_LENGTH);
+  strncat(tempfname1, ".tmp1.XXXXXX", MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING);
+
+  if ((tempf1 = mkstemp(tempfname1)) == -1) {
+    fprintf(stderr, "%s: cannot create first temporary file \"%s\"\n", progname, tempfname1);
+    return 1;
+  }
+
+  if (! quiet) {
+    printf("%s: first temp file=\"%s\"\n", progname, tempfname1);
+  }
+
+  if ((f1 = fdopen(tempf1, "w")) == NULL) {
+    fprintf(stderr, "%s: cannot create writable file stream for first temporary file \"%s\"\n", progname, tempfname1);
+    return 1;
+  }
+
+  strncpy(tempfname2, filename, MAX_FILENAME_LENGTH);
+  strncat(tempfname2, ".tmp2.XXXXXX", MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING);
+
+  if ((tempf2 = mkstemp(tempfname2)) == -1) {
+    fprintf(stderr, "%s: cannot create second temporary file \"%s\"\n", progname, tempfname2);
+    return 1;
+  }
+
+  if (! quiet) {
+    printf("%s: second temp file=\"%s\"\n", progname, tempfname2);
+  }
+
+  if (chmod(tempfname1, stbuf.st_mode) != 0) {
+    fprintf(stderr, "%s: not able to set matching mode on temporary file \"%s\"\n", progname, tempfname1);
+    return 1;
+  }
+
+  filesize = 0;
+  changed  = FALSE;
+  lc       = EOF;
+
+  while ((c = fgetc(f)) != EOF) {
+    if (c != '\r') {
+      fputc(c, f1);
+      lc = c;
+      filesize++;
+    } else {
+      changed = TRUE;
+    }
+  }
+
+  if (filesize > 0) {
+    if (lc != '\n') {
+      if (! quiet) {
+        printf("%s: adding linefeed character \\n to end of file \"%s\"\n", progname, filename);
+      }
+      fputc('\n', f1);
+      changed = TRUE;
+    }
+  }
+
+  fflush(f1);
+  fclose(f1);
+
+  fclose(f);
+
+  if (changed) {
+    if (! quiet) {
+      printf("%s: changes made to the file - renaming temporary files\n", progname);
+    }
+    if (rename(filename, tempfname2) != 0) {
+      fprintf(stderr, "%s: unable to rename file \"%s\" to temporary location \"%s\"\n", progname, filename, tempfname2);
+      return 1;
+    }
+
+    if (rename(tempfname1, filename) != 0) {
+      fprintf(stderr, "%s: unable to rename temporary file \"%s\" to \"%s\"\n", progname, tempfname1, filename);
+      return 1;
+    }
+
+    if (chmod(filename, stbuf.st_mode) != 0) {
+      fprintf(stderr, "%s: not able to set mode on file \"%s\"\n", progname, filename);
+      return 1;
+    }
+  } else {
+    if (! quiet) {
+      printf("%s: no changes required\n", progname);
+    }
+  }
+
+  if (! quiet) {
+    printf("%s: deleting both temporary files\n", progname);
+  }
+  unlink(tempfname1);
+  unlink(tempfname2);
+
+  return 0;
+}
+
+
+/**********************************************************************/
+
 /*
  *  Main
  */
@@ -98,109 +267,32 @@ int main(argc, argv)
   int   argc;
   char *argv[];
 {
-  char *fname;
-  FILE *f;
-  char  tempfname1[MAX_FILE_NAME_SIZE + 6];
-  char  tempfname2[MAX_FILE_NAME_SIZE + 6];
-  FILE *tempf1;
-  struct stat stbuf;
-  int   lc;
-  int   c;
+  int   quiet = FALSE;
+  char *filename;
 
-  progname = argv[0];
+  progname = basefilename(argv[0]);
 
-  if (argc < 2) {
-    fprintf(stderr, "%s: must specify a file name\n", progname);
-    exit(1);
+  if (argc > 3) {
+    usage();
   }
 
-  if (argc > 2) {
-    fprintf(stderr, "%s: only allowed to specify one file name\n", progname);
-    exit(1);
-  }
-
-  fname = argv[1];
-
-  if (strlen(fname) > MAX_FILE_NAME_SIZE) {
-    fprintf(stderr, "%s: file name \"%s\" is too long = limit is %d characters\n", progname, fname, MAX_FILE_NAME_SIZE);
-    exit(1);
-  }
-
-  if (stat(fname, &stbuf) != 0) {
-    fprintf(stderr, "%s: cannot get status of file \"%s\"\n", progname, fname);
-    exit(1);
-  }
-
-  if (! istextfile(fname)) {
-    fprintf(stderr, "%s: file \"%s\" does not appear to be a plain text file\n", progname, fname);
-    exit(1);
-  }
-
-  strncpy(tempfname1, fname,   MAX_FILE_NAME_SIZE);
-  strncat(tempfname1, ".tmp1", MAX_FILE_NAME_SIZE + 6);
-
-  strncpy(tempfname2, fname,   MAX_FILE_NAME_SIZE);
-  strncat(tempfname2, ".tmp2", MAX_FILE_NAME_SIZE + 6);
-
-  if (debug) {
-    printf("[%s]\n", fname);
-    printf("[%s]\n", tempfname1);
-    printf("[%s]\n", tempfname2);
-  }
-
-  if ((f = fopen(fname, "r")) == NULL) {
-    fprintf(stderr, "%s: cannot open file \"%s\" for reading\n", progname, fname);
-    exit(1);
-  }
-
-  unlink(tempfname1);
-
-  if ((tempf1 = fopen(tempfname1, "w")) == NULL) {
-    fprintf(stderr, "%s: cannot open temporary file \"%s\" for writing\n", progname, tempfname1);
-    exit(1);
-  }
-
-  if (chmod(tempfname1, stbuf.st_mode) != 0) {
-    fprintf(stderr, "%s: not able to set matching mode on temporary file \"%s\"\n", progname, tempfname1);
-    exit(1);
-  }
-
-  lc = EOF;
-
-  while ((c = fgetc(f)) != EOF) {
-    if (c != '\r') {
-      fputc(c, tempf1);
-      lc = c;
+  if (argc == 3) {
+    if (strcmp(argv[1], "-q") == 0) {
+      quiet = TRUE;
+      argc--;
+      argv++;
+    } else {
+      usage();
     }
   }
 
-  if (lc != '\n') {
-    fputc('\n', tempf1);
+  if (argc != 2) {
+    usage();
   }
 
-  fflush(tempf1);
-  fclose(tempf1);
+  filename = argv[1];
 
-  fclose(f);
-
-  if (rename(fname, tempfname2) != 0) {
-    fprintf(stderr, "%s: unable to rename file \"%s\" to temporary location \"%s\"\n", progname, fname, tempfname2);
-    exit(1);
-  }
-
-  if (rename(tempfname1, fname) != 0) {
-    fprintf(stderr, "%s: unable to rename temporary file \"%s\" to \"%s\"\n", progname, tempfname1, fname);
-    exit(1);
-  }
-
-  if (chmod(fname, stbuf.st_mode) != 0) {
-    fprintf(stderr, "%s: not able to set mode on file \"%s\"\n", progname, fname);
-    exit(1);
-  }
-
-  unlink(tempfname2);
-
-  return(0);
+  return justlf(filename, quiet);
 }
 
 /**********************************************************************/

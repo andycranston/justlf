@@ -4,10 +4,9 @@ Utilities to handles lines in plain text files.
 
 ## justlf.c
 
-Intended for the UNIX/Linux platform. The `justlf` command takes the
-name of a file. The file
-is examined to see if it is a plain text file. If it is not then an
-error message is printed and the program exits.
+Intended for the UNIX/Linux platform. The `justlf` command takes the name
+of a file. The file is examined to see if it is a plain text file. If
+it is not then an error message is printed and the program exits.
 
 Assuming the file is a plain text file it is stripped of any carriage
 return (\r) characters. Also if the last line in the file does not end
@@ -21,7 +20,7 @@ cd $HOME/bin
 chmod u=rwx,go=rx justlf
 ```
 
-The command creates temporary file names.  If the name of the file being
+The command creates temporary file names. If the name of the file being
 processed is `foo.txt` then the following temporary files are created:
 
 ```
@@ -30,21 +29,20 @@ foo.txt.tmp2.XXXXXX
 ```
 
 where `XXXXXX` is replaced by a uniquely random pattern. The `mkstemp`
-function is used to do this.
-These temporary file are usually deleted after a successful run of the `justlf`
-command but if the command was interrupted or subjected to an unusual
-error condition then either or both of the temporary files might not
-get deleted.
+function is used to do this. These temporary files are usually deleted
+after a successful run of the `justlf` command but if the command was
+interrupted or subjected to an unusual error condition then either or
+both of the temporary files might not get deleted.
 
 The most common use of `justlf` is after a text file from a Windows
-platform has been copied in binary mode to a UNIX/Linux system.  When the
-file is edited using the `vi` editor every line ends with the:
+platform has been copied in binary mode to a UNIX/Linux system. When
+the file is edited using the `vi` editor every line ends with the:
 
 ```
 ^M
 ```
 
-control character.  Simply exit `vi` and type:
+control character. Simply exit `vi` and type:
 
 ```
 justlf filename

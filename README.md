@@ -1,16 +1,31 @@
-# lineutils
+# justlf
 
-Utilities to handle lines in plain text files.
+A command to strip carriage return characters from a plain ASCII text file
 
-## justlf.c
+## Overview
 
-Intended for the UNIX/Linux platform. The `justlf` command takes the name
-of a file. The file is examined to see if it is a plain text file. If
-it is not then an error message is printed and the program exits.
+The `justlf` command strips carriage return charaters from a plain
+ASCII text file (named on the command line) in a similar fashion to the
+`dos2unix` command.
 
-Assuming the file is a plain text file it is stripped of any carriage
+However, there are two differences to the `dos2unix` command.
+
+First difference: the file mode/permissions are preserved. The `dos2unix`
+command can do this via the `--keepdate` / `-k` option but `justlf`
+does this by default.
+
+Second difference: the `justlf` command will detect if the last line in
+the file needs to have a final linefeed/newline character (\n) added to
+the end. The `dos2unix` command does NOT do this.
+
+The `justlf` command is intended for the UNIX/Linux platform and it
+takes the name of a file on the command line. The file is examined to
+see if it is a plain ASCII text file. If it is not then an error message is
+printed and the program exits.
+
+Assuming the file is a plain ASCII text file then it is stripped of any carriage
 return (\r) characters. Also if the last line in the file does not end
-with a line feed (\n) character then one is added.
+with a linefeed (\n) character then one is added.
 
 To compile do something similar to:
 

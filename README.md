@@ -8,15 +8,29 @@ The `justlf` command strips carriage return charaters from a plain
 ASCII text file (named on the command line) in a similar fashion to the
 `dos2unix` command.
 
-However, there are two differences to the `dos2unix` command.
+However, there are differences between the `justlf` command and the
+`dos2unix` command:
 
-First difference: the file mode/permissions are preserved. The `dos2unix`
-command can do this via the `--keepdate` / `-k` option but `justlf`
-does this by default.
++ If the file is already stripped of carriage return characters then
+the file is not modified. The `dos2unix` command always rewrites the
+file even if it does not have to.
 
-Second difference: the `justlf` command will detect if the last line in
-the file needs to have a final linefeed/newline character (\n) added to
-the end. The `dos2unix` command does NOT do this.
++ If the last line in the file does not end in a linefeed/newline
+character (\n) then the `justlf` command will add one. This prevents a
+file having an "Incomplete last line" (a message the vi editor will report
+when editing such a file). The `dos2unix` command leaves incomplete last
+lines as they are.
+
++ The `justlf` command has a strict (some might say too strict)
+interpretation of what a plain ASCII text file looks like. It is the
+ASCII charcater codes between 32 and 126 inclusive and codes 10 (\n),
+13 (\r) and 8 (\t).  The `dos2unix` command
+
++ The `justlf` command chevks that the file is writable by the
+user running the `jutlf` command.
+
++ The `justlf` command checks the file is owned by the same user running
+the `justlf` command.
 
 The `justlf` command is intended for the UNIX/Linux platform and it
 takes the name of a file on the command line. The file is examined to

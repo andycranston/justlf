@@ -4,7 +4,7 @@ A command to strip carriage return characters from a plain ASCII text file
 
 ## Overview
 
-The `justlf` command strips carriage return charaters from a plain
+The `justlf` command strips carriage return characters from a plain
 ASCII text file (named on the command line) in a similar fashion to the
 `dos2unix` command.
 
@@ -24,10 +24,11 @@ lines as they are.
 + The `justlf` command has a strict (some might say too strict)
 interpretation of what a plain ASCII text file looks like. It is the
 ASCII charcater codes between 32 and 126 inclusive and codes 10 (\n),
-13 (\r) and 8 (\t).  The `dos2unix` command
+13 (\r) and 8 (\t).  The `dos2unix` command handles a more relaxed
+set of character codes and even has `codepage` handling.
 
-+ The `justlf` command chevks that the file is writable by the
-user running the `jutlf` command.
++ The `justlf` command checks that the file is writable by the
+user running the `justlf` command.
 
 + The `justlf` command checks the file is owned by the same user running
 the `justlf` command.
@@ -49,7 +50,7 @@ cd $HOME/bin
 chmod u=rwx,go=rx justlf
 ```
 
-The command creates temporary file names. If the name of the file being
+The `justlf` command creates temporary file names. If the name of the file being
 processed is `foo.txt` then the following temporary files are created:
 
 ```
@@ -63,7 +64,7 @@ after a successful run of the `justlf` command but if the command was
 interrupted or subjected to an unusual error condition then either or
 both of the temporary files might not get deleted.
 
-The most common use of `justlf` is after a text file from a Windows
+The most common use of `justlf` is after a plain ASCII text file from a Windows
 platform has been copied in binary mode to a UNIX/Linux system. When
 the file is edited using the `vi` editor every line ends with the:
 

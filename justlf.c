@@ -1,5 +1,5 @@
 /*
- *  @(!--#) @(#) justlf.c, version 008, 24-april-2020
+ *  @(!--#) @(#) justlf.c, version 010, 07-may-2020
  *
  *  remove CR characters (\r) from a text file just leaving LF (\n)
  *  behind. handy for handling files copied from a Windows system
@@ -23,11 +23,11 @@
 
 #include <stdio.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 /**********************************************************************/
 
@@ -87,7 +87,7 @@ void usage()
 
 /**********************************************************************/ 
 
-int istextfile(fname)
+int isplainasciitextfile(fname)
   char *fname;
 {
   FILE *f;
@@ -101,11 +101,11 @@ int istextfile(fname)
   flag = TRUE;
 
   while ((c = getc(f)) != EOF) {
-    if (isprint(c)) {
+    if ((c >= 32) && (c <= 126)) {
       continue;
     }
 
-    if (isspace(c)) {
+    if ((c == '\n') || (c == '\r') || (c == '\t')) {
       continue;
     }
 
@@ -125,6 +125,9 @@ int justlf(filename, quiet)
   int   quiet;
 {
   struct stat stbuf;
+/*
+  struct utim utimbuf;
+*/
   char        tempfname1[MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING + sizeof(char)];
   char        tempfname2[MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING + sizeof(char)];
   int         tempf1;
@@ -145,8 +148,23 @@ int justlf(filename, quiet)
     return(1);
   }
 
+  if (access(filename, R_OK) != 0) {
+    fprintf(stderr, "%s: file \"%s\" is not readable\n", progname, filename);
+    return(1);
+  }
+
+  if (access(filename, W_OK) != 0) {
+    fprintf(stderr, "%s: file \"%s\" is not writable\n", progname, filename);
+    return(1);
+  }
+
   if (stat(filename, &stbuf) != 0) {
     fprintf(stderr, "%s: cannot get status of file \"%s\"\n", progname, filename);
+    return(1);
+  }
+
+  if (stbuf.st_uid != getuid()) {
+    fprintf(stderr, "%s: file \"%s\" is not owned by the user running this command\n", progname, filename);
     return(1);
   }
 
@@ -155,8 +173,8 @@ int justlf(filename, quiet)
     return 1;
   }
 
-  if (! istextfile(filename)) {
-    fprintf(stderr, "%s: file \"%s\" is not a plain text file\n", progname, filename);
+  if (! isplainasciitextfile(filename)) {
+    fprintf(stderr, "%s: file \"%s\" is not a plain ASCII text file\n", progname, filename);
     exit(1);
   }
 
@@ -238,13 +256,23 @@ int justlf(filename, quiet)
     }
 
     if (chmod(filename, stbuf.st_mode) != 0) {
-      fprintf(stderr, "%s: not able to set mode on file \"%s\"\n", progname, filename);
+      fprintf(stderr, "%s: not able to set mode/permissions on file \"%s\"\n", progname, filename);
+      return 1;
+    }
+/*
+
+    utim.actime  = stbuf.st_atime;
+    utim.modtime = stbuf.st_mtime;
+
+    if (utime(filename, &utim) != 0) {
+      fprintf(stderr, "%s: not able to set access and modification time on file \"%s\"\n", progname, filename);
       return 1;
     }
   } else {
     if (! quiet) {
       printf("%s: no changes required\n", progname);
     }
+*/
   }
 
   if (! quiet) {

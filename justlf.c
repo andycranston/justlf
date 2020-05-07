@@ -1,5 +1,5 @@
 /*
- *  @(!--#) @(#) justlf.c, version 010, 07-may-2020
+ *  @(!--#) @(#) justlf.c, version 011, 07-may-2020
  *
  *  remove CR characters (\r) from a text file just leaving LF (\n)
  *  behind. handy for handling files copied from a Windows system
@@ -125,9 +125,6 @@ int justlf(filename, quiet)
   int   quiet;
 {
   struct stat stbuf;
-/*
-  struct utim utimbuf;
-*/
   char        tempfname1[MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING + sizeof(char)];
   char        tempfname2[MAX_FILENAME_LENGTH + TEMP_FILENAME_PADDING + sizeof(char)];
   int         tempf1;
@@ -259,20 +256,6 @@ int justlf(filename, quiet)
       fprintf(stderr, "%s: not able to set mode/permissions on file \"%s\"\n", progname, filename);
       return 1;
     }
-/*
-
-    utim.actime  = stbuf.st_atime;
-    utim.modtime = stbuf.st_mtime;
-
-    if (utime(filename, &utim) != 0) {
-      fprintf(stderr, "%s: not able to set access and modification time on file \"%s\"\n", progname, filename);
-      return 1;
-    }
-  } else {
-    if (! quiet) {
-      printf("%s: no changes required\n", progname);
-    }
-*/
   }
 
   if (! quiet) {
@@ -283,7 +266,6 @@ int justlf(filename, quiet)
 
   return 0;
 }
-
 
 /**********************************************************************/
 
@@ -296,7 +278,6 @@ int main(argc, argv)
   char *argv[];
 {
   int   quiet = FALSE;
-  char *filename;
 
   progname = basefilename(argv[0]);
 
@@ -318,9 +299,7 @@ int main(argc, argv)
     usage();
   }
 
-  filename = argv[1];
-
-  return justlf(filename, quiet);
+  return justlf(argv[1], quiet);
 }
 
 /**********************************************************************/
